@@ -93,6 +93,29 @@ module AlaveteliPro
       Time.zone.now.beginning_of_day + TWELVE_MONTHS
     end
 
+    def self.log_expiring_events
+      query = "SELECT * FROM embargoes e
+                   LEFT JOIN info_request_events ire
+                       ON ire.info_request_id = e.info_request_id
+                       AND ire.created_at = e.expiring_notification_at
+                       AND ire.event_type = 'expiring_embargo'
+               WHERE e.publish_at <= ?
+               AND ire.info_request_id IS NULL"
+      expiring.where(query, self.expiring_soon_time).find_each do |embargo|
+      # query = "(SELECT id
+      #             FROM info_request_events
+      #               WHERE info_request_id = embargoes.info_request_id
+      #               AND event_type = 'expiring_embargo'
+      #               AND created_at = embargoes.expiring_notification_at)
+      #          IS NULL"
+      # expiring.where(query).find_each do |embargo|
+        info_request = embargo.info_request
+        info_request.log_event('expiring_embargo',
+                               { :event_created_at => Time.zone.now },
+                               { :created_at => embargo.expiring_notification_at })
+      end
+    end
+
     private
 
     def add_set_embargo_event
