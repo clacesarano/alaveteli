@@ -585,10 +585,8 @@ end
 
 describe PublicBody, "when asked for the internal_admin_body" do
   before(:each) do
-    # Make sure that there's no internal_admin_body before each of
-    # these tests:
-    PublicBody.connection.delete("DELETE FROM public_bodies WHERE url_name = 'internal_admin_body'")
-    PublicBody.connection.delete("DELETE FROM public_body_translations WHERE url_name = 'internal_admin_body'")
+    InfoRequest.destroy_all
+    PublicBody.destroy_all
   end
 
   it "should create the internal_admin_body if it didn't exist" do
@@ -597,16 +595,13 @@ describe PublicBody, "when asked for the internal_admin_body" do
   end
 
   it "should find the internal_admin_body even if the default locale has changed since it was created" do
-    with_default_locale("en") do
-      I18n.with_locale(:en) do
-        iab = PublicBody.internal_admin_body
-        expect(iab).not_to be_nil
-      end
-    end
-    with_default_locale("es") do
+    iab = PublicBody.internal_admin_body
+    expect(iab).not_to be_nil
+
+    with_default_locale(:es) do
       I18n.with_locale(:es) do
-        iab = PublicBody.internal_admin_body
-        expect(iab).not_to be_nil
+        found_iab = PublicBody.internal_admin_body
+        expect(found_iab).to eq(iab)
       end
     end
   end
